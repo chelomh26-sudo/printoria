@@ -225,11 +225,11 @@
 
 <script>
 /* ====== CATÁLOGO REAL (Libre 17) ====== */
-const DATA_VERSION=2;
+const DATA_VERSION=3;
 const DEFAULT_PRODUCTS=[
   {id:'p1',name:'Estrella Fidget S',variants:[{mat:'Normal',price:50,stock:7},{mat:'Tornasol',price:65,stock:17}]},
   {id:'p2',name:'Estrella Fidget M',variants:[{mat:'Normal',price:75,stock:5},{mat:'Tornasol',price:90,stock:4}]},
-  {id:'p3',name:'Estrella Fidget L',variants:[{mat:'Normal',price:100,stock:5},{mat:'Tornasol',price:115,stock:0}]},
+  {id:'p3',name:'Estrella Fidget L',variants:[{mat:'Normal',price:100,stock:3},{mat:'Tornasol',price:115,stock:0}]},
   {id:'p4',name:'Infinity Cube',variants:[{mat:'Normal',price:65,stock:5},{mat:'Tornasol',price:80,stock:7}]},
   {id:'p5',name:'Dragón Prismor',variants:[{mat:'Normal',price:50,stock:1},{mat:'Tornasol',price:65,stock:12}]},
   {id:'p6',name:'Huevo Sensorial S',variants:[{mat:'Normal',price:100,stock:2},{mat:'Tornasol',price:115,stock:6}]},
@@ -238,6 +238,7 @@ const DEFAULT_PRODUCTS=[
   {id:'p9',name:'Huevo Dragón',variants:[{mat:'Normal',price:150,stock:2}]},
   {id:'p10',name:'Caja Mundial',variants:[{mat:'Normal',price:150,stock:0}]},
   {id:'p11',name:'Clicker',variants:[{mat:'Normal',price:75,stock:2}]},
+  {id:'p12',name:'Llavero NFC',variants:[{mat:'Normal',price:90,stock:14}]},
 ];
 
 function load(k,def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}}
