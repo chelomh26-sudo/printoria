@@ -175,6 +175,13 @@
     <div id="prodManage" style="margin-top:14px"></div>
     <button class="btn btn-outline" style="margin-top:20px" onclick="resetWeek()">🔄 Reiniciar semana (nuevo domingo)</button>
     <button class="btn btn-ghost" style="margin-top:10px" onclick="changePass()">🔒 Cambiar contraseña</button>
+    <div class="paybox" style="margin-top:18px">
+      <label style="font-size:12px;color:var(--muted);font-weight:700">☁️ Conexión con Printoria web</label>
+      <input class="payin" id="sbKey" style="font-size:12px;text-align:left" placeholder="Pega tu anon key de Supabase" autocomplete="off">
+      <button class="btn btn-green" onclick="saveSBKey()">Guardar y conectar</button>
+      <div id="sbStatus" style="text-align:center;font-weight:800;margin-top:8px;font-size:13px"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4">La consigues en supabase.com → tu proyecto → Settings → API → «anon public». Se guarda solo en este dispositivo. Ya conectado, cada venta se sube sola a la web.</div>
+    </div>
   </section>
 </main>
 
@@ -244,6 +251,49 @@ const DEFAULT_PRODUCTS=[
 function load(k,def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}}
 function save(){localStorage.setItem('printoria_products',JSON.stringify(products));
   localStorage.setItem('printoria_sales',JSON.stringify(sales));}
+
+/* ====== SYNC A LA NUBE (Printoria web / Supabase) ====== */
+const SB_URL='https://chjihvceishdggaftdzh.supabase.co';
+function getSBKey(){return localStorage.getItem('printoria_sb_key')||'';}
+function sbHeaders(){const k=getSBKey();return {'apikey':k,'Authorization':'Bearer '+k,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'};}
+function isoDate(ts){const d=new Date(ts||Date.now());return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function posSaleToAdmin(s){
+  const its=(s.items||[]).map(it=>({producto:it.name,tipo:(String(it.mat||'').toLowerCase().indexOf('tornasol')>=0?'Tornasol':'Básico'),color:'',cantidad:it.qty,precioUnit:it.price}));
+  const tipos=[...new Set(its.map(i=>i.tipo))];
+  const cant=its.reduce((a,i)=>a+i.cantidad,0);
+  return {id:'POS'+s.ts, fecha:isoDate(s.ts), origen:'Libre 17', hora:s.time,
+    producto: its.map(i=>i.cantidad+'\u00d7 '+i.producto+' ('+i.tipo+')').join(' + '),
+    tipo: tipos.length===1?tipos[0]:'Mixto', color:'', cantidad:cant,
+    precioUnitario: cant?Math.round((s.total/cant)*100)/100:s.total, total:s.total, items:its, estado:'ENTREGADO'};
+}
+function queueGet(){try{return JSON.parse(localStorage.getItem('printoria_cloud_queue')||'[]');}catch(e){return [];}}
+function queueSet(q){localStorage.setItem('printoria_cloud_queue',JSON.stringify(q));}
+function enqueueSale(a){const q=queueGet();if(!q.some(x=>x.id===a.id)){q.push(a);queueSet(q);}}
+async function flushCloud(){
+  const q=queueGet(); if(!q.length||!navigator.onLine||!getSBKey()) return;
+  try{
+    const res=await fetch(SB_URL+'/rest/v1/printoria_store?key=eq.printoria_sales&select=data',{headers:sbHeaders()});
+    if(!res.ok) return;
+    const rows=await res.json();
+    let arr=(rows[0]&&Array.isArray(rows[0].data))?rows[0].data:[];
+    const byId=new Map(arr.map(x=>[x.id,x]));
+    q.forEach(x=>byId.set(x.id,x));
+    const put=await fetch(SB_URL+'/rest/v1/printoria_store',{method:'POST',headers:sbHeaders(),body:JSON.stringify({key:'printoria_sales',data:[...byId.values()],updated_at:new Date().toISOString()})});
+    if(put.ok) queueSet([]);
+  }catch(e){}
+}
+function saveSBKey(){const v=(document.getElementById('sbKey').value||'').trim();localStorage.setItem('printoria_sb_key',v);testSB();}
+async function testSB(){
+  const el=document.getElementById('sbStatus'); if(!el) return;
+  if(!getSBKey()){el.textContent='Sin conectar';el.style.color='var(--muted)';return;}
+  el.textContent='Conectando...';el.style.color='var(--muted)';
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/printoria_store?select=key&limit=1',{headers:sbHeaders()});
+    if(r.ok){el.textContent='\u2713 Conectado a la web';el.style.color='var(--greenDark)';flushCloud();}
+    else{el.textContent='\u2717 Llave inv\u00e1lida ('+r.status+')';el.style.color='var(--amber)';}
+  }catch(e){el.textContent='\u2717 Sin conexi\u00f3n';el.style.color='var(--amber)';}
+}
+window.addEventListener('online',flushCloud);
 function money(n){return '$'+Math.round(n).toLocaleString('es-MX');}
 function todayKey(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
 function getPass(){return localStorage.getItem('printoria_pass')||'2696';}
@@ -407,9 +457,11 @@ function saveSale(){
   const d=new Date();const n=(sales.filter(s=>s.day===todayKey()).length)+1;
   cart.forEach(it=>{const p=products.find(x=>x.id===it.pid);const v=p&&p.variants.find(x=>x.mat===it.mat);
     if(v)v.stock=Math.max(0,v.stock-it.qty);});
-  sales.push({n,day:todayKey(),time:d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
-    items:cart.map(it=>({...it})),total,paid,change:paid-total,ts:d.getTime()});
+  const _venta={n,day:todayKey(),time:d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
+    items:cart.map(it=>({...it})),total,paid,change:paid-total,ts:d.getTime()};
+  sales.push(_venta);
   save();clearCart();toast('Venta #'+n+' guardada ✓');
+  try{ enqueueSale(posSaleToAdmin(_venta)); flushCloud(); }catch(e){}
 }
 
 /* ====== PRODUCTOS (editar) ====== */
@@ -509,6 +561,8 @@ function renderAll(){renderProducts();renderCart();renderProdManage();}
 document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
 
 renderAll();
+flushCloud();
+try{const _e=document.getElementById('sbKey'); if(_e){_e.value=getSBKey(); testSB();}}catch(e){}
 
 /* ====== APP OFFLINE (PWA) ====== */
 if('serviceWorker' in navigator){
