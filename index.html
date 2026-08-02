@@ -237,9 +237,9 @@ const DEFAULT_PRODUCTS=[
   {id:'p1',name:'Estrella Fidget S',variants:[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:7}]},
   {id:'p2',name:'Estrella Fidget M',variants:[{mat:'Normal',price:75,stock:3},{mat:'Tornasol',price:90,stock:0}]},
   {id:'p3',name:'Estrella Fidget L',variants:[{mat:'Normal',price:100,stock:3},{mat:'Tornasol',price:115,stock:0}]},
-  {id:'p4',name:'Infinity Cube',variants:[{mat:'Normal',price:65,stock:5},{mat:'Tornasol',price:80,stock:7}]},
+  {id:'p4',name:'Infinity Cube',variants:[{mat:'Normal',price:65,stock:3},{mat:'Tornasol',price:80,stock:9}]},
   {id:'p5',name:'Dragón Prismor',variants:[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:8}]},
-  {id:'p6',name:'Huevo Sensorial S',variants:[{mat:'Normal',price:100,stock:10},{mat:'Tornasol',price:115,stock:6}]},
+  {id:'p6',name:'Huevo Sensorial S',variants:[{mat:'Normal',price:100,stock:12},{mat:'Tornasol',price:115,stock:4}]},
   {id:'p7',name:'Mini Cono Passthrough',variants:[{mat:'Normal',price:45,stock:4},{mat:'Tornasol',price:60,stock:4}]},
   {id:'p8',name:'Monedero',variants:[{mat:'Normal',price:100,stock:11}]},
   {id:'p10',name:'Caja Mundial',variants:[{mat:'Normal',price:150,stock:0}]},
@@ -254,28 +254,35 @@ function save(){localStorage.setItem('printoria_products',JSON.stringify(product
   localStorage.setItem('printoria_sales',JSON.stringify(sales));}
 
 /* ====== ACTUALIZACIÓN DE CATÁLOGO (no borra ventas) ====== */
-const CATALOG_VERSION=2;
+const CATALOG_VERSION=3;
 function applyCatalogUpdate(){
   try{
-    if(parseInt(localStorage.getItem('printoria_catalog_v')||'1')>=CATALOG_VERSION) return;
-    const UP=[
-      {name:'Estrella Fidget S',variants:[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:7}]},
-      {name:'Estrella Fidget M',variants:[{mat:'Normal',price:75,stock:3},{mat:'Tornasol',price:90,stock:0}]},
-      {name:'Estrella Fidget L',variants:[{mat:'Normal',price:100,stock:3},{mat:'Tornasol',price:115,stock:0}]},
-      {name:'Dragón Prismor',variants:[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:8}]},
-      {name:'Huevo Sensorial S',variants:[{mat:'Normal',price:100,stock:10},{mat:'Tornasol',price:115,stock:6}]},
-      {name:'Mini Cono Passthrough',variants:[{mat:'Normal',price:45,stock:4},{mat:'Tornasol',price:60,stock:4}]},
-      {name:'Llavero NFC',variants:[{mat:'Normal',price:90,stock:14}]},
-      {name:'Fidget Spinner',variants:[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:2}]},
-      {name:'Coin Flipper',variants:[{mat:'Normal',price:50,stock:12}]},
-    ];
-    products=products.filter(p=>{const n=(p.name||'').toLowerCase();return n!=='huevo dragón'&&n!=='huevo dragon';});
-    UP.forEach(u=>{
-      const vs=u.variants.map(v=>({mat:v.mat,price:v.price,stock:v.stock,baseStock:v.stock}));
-      const ex=products.find(p=>(p.name||'').toLowerCase()===u.name.toLowerCase());
-      if(ex){ex.variants=vs;} else {products.push({id:'p'+Date.now()+Math.floor(Math.random()*1000),name:u.name,variants:vs});}
-    });
-    localStorage.setItem('printoria_catalog_v',String(CATALOG_VERSION));
+    let cv=parseInt(localStorage.getItem('printoria_catalog_v')||'1');
+    if(cv>=CATALOG_VERSION) return;
+    const upsert=(name,variants)=>{
+      const vs=variants.map(v=>({mat:v.mat,price:v.price,stock:v.stock,baseStock:v.stock}));
+      const ex=products.find(p=>(p.name||'').toLowerCase()===name.toLowerCase());
+      if(ex){ex.variants=vs;} else {products.push({id:'p'+Date.now()+Math.floor(Math.random()*1000),name:name,variants:vs});}
+    };
+    if(cv<2){
+      products=products.filter(p=>{const n=(p.name||'').toLowerCase();return n!=='huevo dragón'&&n!=='huevo dragon';});
+      upsert('Estrella Fidget S',[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:7}]);
+      upsert('Estrella Fidget M',[{mat:'Normal',price:75,stock:3},{mat:'Tornasol',price:90,stock:0}]);
+      upsert('Estrella Fidget L',[{mat:'Normal',price:100,stock:3},{mat:'Tornasol',price:115,stock:0}]);
+      upsert('Dragón Prismor',[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:8}]);
+      upsert('Huevo Sensorial S',[{mat:'Normal',price:100,stock:10},{mat:'Tornasol',price:115,stock:6}]);
+      upsert('Mini Cono Passthrough',[{mat:'Normal',price:45,stock:4},{mat:'Tornasol',price:60,stock:4}]);
+      upsert('Llavero NFC',[{mat:'Normal',price:90,stock:14}]);
+      upsert('Fidget Spinner',[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:2}]);
+      upsert('Coin Flipper',[{mat:'Normal',price:50,stock:12}]);
+      cv=2;
+    }
+    if(cv<3){
+      upsert('Huevo Sensorial S',[{mat:'Normal',price:100,stock:12},{mat:'Tornasol',price:115,stock:4}]);
+      upsert('Infinity Cube',[{mat:'Normal',price:65,stock:3},{mat:'Tornasol',price:80,stock:9}]);
+      cv=3;
+    }
+    localStorage.setItem('printoria_catalog_v',String(cv));
     save();
   }catch(e){}
 }
