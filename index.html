@@ -322,6 +322,36 @@ async function testSB(){
   }catch(e){el.textContent='\u2717 Sin conexi\u00f3n';el.style.color='var(--amber)';}
 }
 window.addEventListener('online',flushCloud);
+async function removeCloudSale(id){
+  queueSet(queueGet().filter(x=>x.id!==id));
+  if(!getSBKey()||!navigator.onLine) return;
+  try{
+    const res=await fetch(SB_URL+'/rest/v1/printoria_store?key=eq.printoria_sales&select=data',{headers:sbHeaders()});
+    if(!res.ok) return;
+    const rows=await res.json();
+    let arr=(rows[0]&&Array.isArray(rows[0].data))?rows[0].data:[];
+    const filtered=arr.filter(x=>x.id!==id);
+    if(filtered.length!==arr.length){
+      await fetch(SB_URL+'/rest/v1/printoria_store',{method:'POST',headers:sbHeaders(),body:JSON.stringify({key:'printoria_sales',data:filtered,updated_at:new Date().toISOString()})});
+    }
+  }catch(e){}
+}
+function cancelSale(ts){
+  const idx=sales.findIndex(s=>s.ts===ts);
+  if(idx<0) return;
+  const s=sales[idx];
+  if(!confirm('¿Cancelar la venta #'+s.n+' de '+money(s.total)+'?\n\nSe regresa el stock y se borra de la web.')) return;
+  (s.items||[]).forEach(it=>{
+    const p=products.find(x=>x.id===it.pid)||products.find(x=>x.name===it.name);
+    const v=p&&p.variants.find(x=>x.mat===it.mat);
+    if(v) v.stock=(v.stock||0)+(it.qty||0);
+  });
+  sales.splice(idx,1);
+  save();
+  removeCloudSale('POS'+ts);
+  renderSales(); renderProducts();
+  toast('Venta #'+s.n+' cancelada');
+}
 function money(n){return '$'+Math.round(n).toLocaleString('es-MX');}
 function todayKey(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
 function getPass(){return localStorage.getItem('printoria_pass')||'2696';}
@@ -397,6 +427,7 @@ function renderSales(){
       <div class="head"><span>#${s.n} · ${s.time}</span><span class="amt">${money(s.total)}</span></div>
       <div class="items">${s.items.map(it=>`${it.qty}× ${it.name} (${it.mat})`).join('<br>')}</div>
       <div class="pay">Pagó ${money(s.paid)} · Cambio ${money(s.change)}</div>
+      <button class="btn btn-ghost" style="color:var(--amber);padding:10px;margin-top:8px;font-size:13px" onclick="cancelSale(${s.ts})">✕ Cancelar venta</button>
     </div>`).join('');
 }
 function renderProdManage(){
