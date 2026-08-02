@@ -234,23 +234,51 @@
 /* ====== CATÁLOGO REAL (Libre 17) ====== */
 const DATA_VERSION=3;
 const DEFAULT_PRODUCTS=[
-  {id:'p1',name:'Estrella Fidget S',variants:[{mat:'Normal',price:50,stock:7},{mat:'Tornasol',price:65,stock:17}]},
-  {id:'p2',name:'Estrella Fidget M',variants:[{mat:'Normal',price:75,stock:5},{mat:'Tornasol',price:90,stock:4}]},
+  {id:'p1',name:'Estrella Fidget S',variants:[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:7}]},
+  {id:'p2',name:'Estrella Fidget M',variants:[{mat:'Normal',price:75,stock:3},{mat:'Tornasol',price:90,stock:0}]},
   {id:'p3',name:'Estrella Fidget L',variants:[{mat:'Normal',price:100,stock:3},{mat:'Tornasol',price:115,stock:0}]},
   {id:'p4',name:'Infinity Cube',variants:[{mat:'Normal',price:65,stock:5},{mat:'Tornasol',price:80,stock:7}]},
-  {id:'p5',name:'Dragón Prismor',variants:[{mat:'Normal',price:50,stock:1},{mat:'Tornasol',price:65,stock:12}]},
-  {id:'p6',name:'Huevo Sensorial S',variants:[{mat:'Normal',price:100,stock:2},{mat:'Tornasol',price:115,stock:6}]},
-  {id:'p7',name:'Mini Cono Passthrough',variants:[{mat:'Normal',price:45,stock:6},{mat:'Tornasol',price:60,stock:6}]},
+  {id:'p5',name:'Dragón Prismor',variants:[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:8}]},
+  {id:'p6',name:'Huevo Sensorial S',variants:[{mat:'Normal',price:100,stock:10},{mat:'Tornasol',price:115,stock:6}]},
+  {id:'p7',name:'Mini Cono Passthrough',variants:[{mat:'Normal',price:45,stock:4},{mat:'Tornasol',price:60,stock:4}]},
   {id:'p8',name:'Monedero',variants:[{mat:'Normal',price:100,stock:11}]},
-  {id:'p9',name:'Huevo Dragón',variants:[{mat:'Normal',price:150,stock:2}]},
   {id:'p10',name:'Caja Mundial',variants:[{mat:'Normal',price:150,stock:0}]},
   {id:'p11',name:'Clicker',variants:[{mat:'Normal',price:75,stock:2}]},
   {id:'p12',name:'Llavero NFC',variants:[{mat:'Normal',price:90,stock:14}]},
+  {id:'p13',name:'Fidget Spinner',variants:[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:2}]},
+  {id:'p14',name:'Coin Flipper',variants:[{mat:'Normal',price:50,stock:12}]},
 ];
 
 function load(k,def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}}
 function save(){localStorage.setItem('printoria_products',JSON.stringify(products));
   localStorage.setItem('printoria_sales',JSON.stringify(sales));}
+
+/* ====== ACTUALIZACIÓN DE CATÁLOGO (no borra ventas) ====== */
+const CATALOG_VERSION=2;
+function applyCatalogUpdate(){
+  try{
+    if(parseInt(localStorage.getItem('printoria_catalog_v')||'1')>=CATALOG_VERSION) return;
+    const UP=[
+      {name:'Estrella Fidget S',variants:[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:7}]},
+      {name:'Estrella Fidget M',variants:[{mat:'Normal',price:75,stock:3},{mat:'Tornasol',price:90,stock:0}]},
+      {name:'Estrella Fidget L',variants:[{mat:'Normal',price:100,stock:3},{mat:'Tornasol',price:115,stock:0}]},
+      {name:'Dragón Prismor',variants:[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:8}]},
+      {name:'Huevo Sensorial S',variants:[{mat:'Normal',price:100,stock:10},{mat:'Tornasol',price:115,stock:6}]},
+      {name:'Mini Cono Passthrough',variants:[{mat:'Normal',price:45,stock:4},{mat:'Tornasol',price:60,stock:4}]},
+      {name:'Llavero NFC',variants:[{mat:'Normal',price:90,stock:14}]},
+      {name:'Fidget Spinner',variants:[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:2}]},
+      {name:'Coin Flipper',variants:[{mat:'Normal',price:50,stock:12}]},
+    ];
+    products=products.filter(p=>{const n=(p.name||'').toLowerCase();return n!=='huevo dragón'&&n!=='huevo dragon';});
+    UP.forEach(u=>{
+      const vs=u.variants.map(v=>({mat:v.mat,price:v.price,stock:v.stock,baseStock:v.stock}));
+      const ex=products.find(p=>(p.name||'').toLowerCase()===u.name.toLowerCase());
+      if(ex){ex.variants=vs;} else {products.push({id:'p'+Date.now()+Math.floor(Math.random()*1000),name:u.name,variants:vs});}
+    });
+    localStorage.setItem('printoria_catalog_v',String(CATALOG_VERSION));
+    save();
+  }catch(e){}
+}
 
 /* ====== SYNC A LA NUBE (Printoria web / Supabase) ====== */
 const SB_URL='https://chjihvceishdggaftdzh.supabase.co';
@@ -308,6 +336,7 @@ let cart=[];
 let vm={product:null,mat:null,qty:1};
 let editingProdId=null;
 save();
+applyCatalogUpdate();
 
 /* stock disponible por variante (descontando lo que ya está en carrito) */
 function reserved(pid,mat){return cart.filter(it=>it.pid===pid&&it.mat===mat).reduce((s,it)=>s+it.qty,0);}
