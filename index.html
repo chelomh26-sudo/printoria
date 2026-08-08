@@ -254,7 +254,7 @@ function save(){localStorage.setItem('printoria_products',JSON.stringify(product
   localStorage.setItem('printoria_sales',JSON.stringify(sales));}
 
 /* ====== ACTUALIZACIÓN DE CATÁLOGO (no borra ventas) ====== */
-const CATALOG_VERSION=3;
+const CATALOG_VERSION=4;
 function applyCatalogUpdate(){
   try{
     let cv=parseInt(localStorage.getItem('printoria_catalog_v')||'1');
@@ -281,6 +281,21 @@ function applyCatalogUpdate(){
       upsert('Huevo Sensorial S',[{mat:'Normal',price:100,stock:12},{mat:'Tornasol',price:115,stock:4}]);
       upsert('Infinity Cube',[{mat:'Normal',price:65,stock:3},{mat:'Tornasol',price:80,stock:9}]);
       cv=3;
+    }
+    if(cv<4){
+      upsert('Estrella Fidget L',[{mat:'Normal',price:100,stock:2},{mat:'Tornasol',price:115,stock:0}]);
+      upsert('Estrella Fidget M',[{mat:'Normal',price:75,stock:2},{mat:'Tornasol',price:90,stock:0}]);
+      upsert('Estrella Fidget S',[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:23}]);
+      upsert('Mini Cono Passthrough',[{mat:'Normal',price:45,stock:3},{mat:'Tornasol',price:60,stock:0}]);
+      upsert('Fidget Spinner',[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:8}]);
+      upsert('Coin Flipper',[{mat:'Normal',price:50,stock:11}]);
+      upsert('Huevo Sensorial S',[{mat:'Normal',price:100,stock:12},{mat:'Tornasol',price:115,stock:3}]);
+      upsert('Infinity Cube',[{mat:'Normal',price:65,stock:4},{mat:'Tornasol',price:80,stock:10}]);
+      upsert('Dragón Prismor',[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:13}]);
+      upsert('Monedero',[{mat:'Normal',price:100,stock:2}]);
+      upsert('Llavero NFC',[{mat:'Normal',price:90,stock:13}]);
+      upsert('Hand Rollers',[{mat:'Normal',price:75,stock:0},{mat:'Tornasol',price:90,stock:10}]);
+      cv=4;
     }
     localStorage.setItem('printoria_catalog_v',String(cv));
     save();
@@ -546,7 +561,7 @@ function saveProduct(){
   if(!name){toast('Ponle nombre');return;}
   const lines=document.getElementById('pmVars').value.split('\n').map(l=>l.trim()).filter(Boolean);
   const variants=lines.map(l=>{const pt=l.split(',').map(x=>x.trim());
-    const st=parseInt(pt[2])||0;return {mat:pt[0]||'Normal',price:parseFloat(pt[1])||0,stock:st,baseStock:st};});
+    const st=parseInt(pt[2])||0;return {mat:pt[0]||'Normal',price:parseFloat(pt[1])||0,stork:st,baseStock:st};});
   if(variants.length===0){toast('Agrega al menos una variante');return;}
   if(editingProdId){const p=products.find(x=>x.id===editingProdId);p.name=name;p.variants=variants;}
   else products.push({id:'p'+Date.now(),name,variants});
@@ -633,7 +648,11 @@ try{const _e=document.getElementById('sbKey'); if(_e){_e.value=getSBKey(); testS
 
 /* ====== APP OFFLINE (PWA) ====== */
 if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
+  let _reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!_reloaded){ _reloaded=true; location.reload(); } });
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').then(reg=>{ reg.update(); }).catch(()=>{});
+  });
 }
 </script>
 </body>
