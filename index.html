@@ -232,21 +232,23 @@
 
 <script>
 /* ====== CATÁLOGO REAL (Libre 17) ====== */
-const DATA_VERSION=3;
+const DATA_VERSION=5;
 const DEFAULT_PRODUCTS=[
-  {id:'p1',name:'Estrella Fidget S',variants:[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:7}]},
-  {id:'p2',name:'Estrella Fidget M',variants:[{mat:'Normal',price:75,stock:3},{mat:'Tornasol',price:90,stock:0}]},
-  {id:'p3',name:'Estrella Fidget L',variants:[{mat:'Normal',price:100,stock:3},{mat:'Tornasol',price:115,stock:0}]},
-  {id:'p4',name:'Infinity Cube',variants:[{mat:'Normal',price:65,stock:3},{mat:'Tornasol',price:80,stock:9}]},
-  {id:'p5',name:'Dragón Prismor',variants:[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:8}]},
-  {id:'p6',name:'Huevo Sensorial S',variants:[{mat:'Normal',price:100,stock:12},{mat:'Tornasol',price:115,stock:4}]},
-  {id:'p7',name:'Mini Cono Passthrough',variants:[{mat:'Normal',price:45,stock:4},{mat:'Tornasol',price:60,stock:4}]},
-  {id:'p8',name:'Monedero',variants:[{mat:'Normal',price:100,stock:11}]},
-  {id:'p10',name:'Caja Mundial',variants:[{mat:'Normal',price:150,stock:0}]},
-  {id:'p11',name:'Clicker',variants:[{mat:'Normal',price:75,stock:2}]},
-  {id:'p12',name:'Llavero NFC',variants:[{mat:'Normal',price:90,stock:14}]},
-  {id:'p13',name:'Fidget Spinner',variants:[{mat:'Normal',price:50,stock:0},{mat:'Tornasol',price:65,stock:2}]},
-  {id:'p14',name:'Coin Flipper',variants:[{mat:'Normal',price:50,stock:12}]},
+  {id:'p1',name:'Estrella Fidget S',variants:[{mat:'Normal',price:50,stock:0,cloudId:null},{mat:'Tornasol',price:65,stock:15,cloudId:'P009'}]},
+  {id:'p2',name:'Estrella Fidget M',variants:[{mat:'Normal',price:75,stock:2,cloudId:'P008'},{mat:'Tornasol',price:90,stock:0,cloudId:'P015'}]},
+  {id:'p3',name:'Estrella Fidget L',variants:[{mat:'Normal',price:100,stock:2,cloudId:'P007'},{mat:'Tornasol',price:115,stock:0,cloudId:null}]},
+  {id:'p4',name:'Infinity Cube',variants:[{mat:'Normal',price:65,stock:3,cloudId:'P010'},{mat:'Tornasol',price:80,stock:8,cloudId:'P016'}]},
+  {id:'p5',name:'Dragón Prismor',variants:[{mat:'Normal',price:45,stock:0,cloudId:'P011'},{mat:'Tornasol',price:60,stock:12,cloudId:'P017'}]},
+  {id:'p6',name:'Huevo Sensorial S',variants:[{mat:'Normal',price:100,stock:11,cloudId:'P012'},{mat:'Tornasol',price:115,stock:4,cloudId:'P20'}]},
+  {id:'p7',name:'Mini Cono Passthrough',variants:[{mat:'Normal',price:45,stock:3,cloudId:'P013'},{mat:'Tornasol',price:60,stock:11,cloudId:'P018'}]},
+  {id:'p8',name:'Monedero',variants:[{mat:'Normal',price:100,stock:2,cloudId:'P24'}]},
+  {id:'p9',name:'Llavero NFC',variants:[{mat:'Normal',price:90,stock:14,cloudId:'P23'}]},
+  {id:'p10',name:'Llavero Gym',variants:[{mat:'Normal',price:50,stock:7,cloudId:'P22'}]},
+  {id:'p11',name:'Fidget Spinner',variants:[{mat:'Normal',price:50,stock:0,cloudId:null},{mat:'Tornasol',price:65,stock:8,cloudId:'P21'}]},
+  {id:'p12',name:'Hand Roller',variants:[{mat:'Normal',price:85,stock:0,cloudId:null},{mat:'Tornasol',price:100,stock:15,cloudId:'P19'}]},
+  {id:'p13',name:'Coin Flipper',variants:[{mat:'Normal',price:50,stock:10,cloudId:'P25'}]},
+  {id:'p14',name:'Caja Mundial',variants:[{mat:'Normal',price:150,stock:0,cloudId:'P001'}]},
+  {id:'p15',name:'Clicker',variants:[{mat:'Normal',price:75,stock:2,cloudId:'P014'}]},
 ];
 
 function load(k,def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}}
@@ -254,7 +256,7 @@ function save(){localStorage.setItem('printoria_products',JSON.stringify(product
   localStorage.setItem('printoria_sales',JSON.stringify(sales));}
 
 /* ====== ACTUALIZACIÓN DE CATÁLOGO (no borra ventas) ====== */
-const CATALOG_VERSION=4;
+const CATALOG_VERSION=5;
 function applyCatalogUpdate(){
   try{
     let cv=parseInt(localStorage.getItem('printoria_catalog_v')||'1');
@@ -297,13 +299,17 @@ function applyCatalogUpdate(){
       upsert('Hand Rollers',[{mat:'Normal',price:75,stock:0},{mat:'Tornasol',price:90,stock:10}]);
       cv=4;
     }
+    if(cv<5){
+      products=JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+      cv=5;
+    }
     localStorage.setItem('printoria_catalog_v',String(cv));
     save();
   }catch(e){}
 }
 
 /* ====== SYNC A LA NUBE (Printoria web / Supabase) ====== */
-const SB_URL='https://chjihvceishdggaftdzh.supabase.co';
+const SB_URL='https://sjstuvixonakpjezkmpk.supabase.co';
 function getSBKey(){return localStorage.getItem('printoria_sb_key')||'';}
 function sbHeaders(){const k=getSBKey();return {'apikey':k,'Authorization':'Bearer '+k,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'};}
 function isoDate(ts){const d=new Date(ts||Date.now());return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -320,17 +326,7 @@ function queueGet(){try{return JSON.parse(localStorage.getItem('printoria_cloud_
 function queueSet(q){localStorage.setItem('printoria_cloud_queue',JSON.stringify(q));}
 function enqueueSale(a){const q=queueGet();if(!q.some(x=>x.id===a.id)){q.push(a);queueSet(q);}}
 async function flushCloud(){
-  const q=queueGet(); if(!q.length||!navigator.onLine||!getSBKey()) return;
-  try{
-    const res=await fetch(SB_URL+'/rest/v1/printoria_store?key=eq.printoria_sales&select=data',{headers:sbHeaders()});
-    if(!res.ok) return;
-    const rows=await res.json();
-    let arr=(rows[0]&&Array.isArray(rows[0].data))?rows[0].data:[];
-    const byId=new Map(arr.map(x=>[x.id,x]));
-    q.forEach(x=>byId.set(x.id,x));
-    const put=await fetch(SB_URL+'/rest/v1/printoria_store',{method:'POST',headers:sbHeaders(),body:JSON.stringify({key:'printoria_sales',data:[...byId.values()],updated_at:new Date().toISOString()})});
-    if(put.ok) queueSet([]);
-  }catch(e){}
+  return syncCloud();
 }
 function saveSBKey(){const v=(document.getElementById('sbKey').value||'').trim();localStorage.setItem('printoria_sb_key',v);testSB();}
 async function testSB(){
@@ -358,25 +354,43 @@ async function removeCloudSale(id){
     }
   }catch(e){}
 }
-function cancelSale(ts){
+async function cancelSale(ts){
   const idx=sales.findIndex(s=>s.ts===ts);
   if(idx<0) return;
   const s=sales[idx];
   if(!confirm('¿Cancelar la venta #'+s.n+' de '+money(s.total)+'?\n\nSe regresa el stock y se borra de la web.')) return;
-  (s.items||[]).forEach(it=>{
-    const p=products.find(x=>x.id===it.pid)||products.find(x=>x.name===it.name);
-    const v=p&&p.variants.find(x=>x.mat===it.mat);
-    if(v) v.stock=(v.stock||0)+(it.qty||0);
-  });
+  try{
+    const r=await cloudRequest({method:'POST',body:{action:'sale.cancel',sale_id:'POS'+ts}});
+    if(!r.ok) throw new Error(r.error||'No se pudo cancelar');
+  }catch(e){toast(e.message);return;}
   sales.splice(idx,1);
   save();
-  removeCloudSale('POS'+ts);
-  renderSales(); renderProducts();
+  await syncCloud(); renderSales(); renderProducts();
   toast('Venta #'+s.n+' cancelada');
 }
 function money(n){return '$'+Math.round(n).toLocaleString('es-MX');}
 function todayKey(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
 function getPass(){return localStorage.getItem('printoria_pass')||'2696';}
+async function cloudRequest({method='GET',body}={}){
+  const response=await fetch('/api/pos',{method,headers:{'Content-Type':'application/json','x-pos-key':getPass()},body:body?JSON.stringify(body):undefined});
+  let data={};try{data=await response.json();}catch(e){}
+  return {...data,ok:response.ok};
+}
+async function syncCloud(){
+  if(!navigator.onLine)return;
+  try{
+    const data=await cloudRequest();
+    if(!data.ok)throw new Error(data.error||'Sin conexión con inventario');
+    const stockByProduct=new Map((data.stock||[]).map(x=>[x.productoId,Number(x.cantidad)||0]));
+    products.forEach(p=>p.variants.forEach(v=>{if(v.cloudId&&stockByProduct.has(v.cloudId)){v.stock=stockByProduct.get(v.cloudId);v.baseStock=v.stock;}}));
+    const remote=(data.sales||[]).filter(s=>s.origen==='Libre 17'&&String(s.id||'').startsWith('POS')&&s.ts).map(s=>({
+      n:s.ticket||s.n||1,day:s.day||s.fecha,time:s.time||s.hora||'',items:Array.isArray(s.items)?s.items:[],
+      total:Number(s.total)||0,paid:Number(s.paid??s.total)||0,change:Number(s.change)||0,ts:Number(s.ts)
+    }));
+    if(remote.length){const byTs=new Map(sales.map(s=>[s.ts,s]));remote.forEach(s=>byTs.set(s.ts,s));sales=[...byTs.values()].sort((a,b)=>a.ts-b.ts);}
+    save();renderAll();
+  }catch(e){toast(e.message);}
+}
 function matSwatch(mat){return (mat||'').toLowerCase().indexOf('tornasol')>=0 ? 'background:var(--tornasol)' : 'background:#22c55e';}
 
 let products=load('printoria_products',null);
@@ -532,18 +546,23 @@ function calcChange(){
   if(diff>=0){ch.className='change ok';ch.textContent='Cambio: '+money(diff);}
   else{ch.className='change bad';ch.textContent='Faltan '+money(-diff);}
 }
-function saveSale(){
+async function saveSale(){
   if(cart.length===0){toast('Carrito vacío');return;}
   const total=cartTotal();const paid=parseFloat(document.getElementById('payin').value)||total;
   if(paid<total){toast('El pago no alcanza');return;}
   const d=new Date();const n=(sales.filter(s=>s.day===todayKey()).length)+1;
-  cart.forEach(it=>{const p=products.find(x=>x.id===it.pid);const v=p&&p.variants.find(x=>x.mat===it.mat);
-    if(v)v.stock=Math.max(0,v.stock-it.qty);});
   const _venta={n,day:todayKey(),time:d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
     items:cart.map(it=>({...it})),total,paid,change:paid-total,ts:d.getTime()};
+  const lines=cart.map(it=>{const p=products.find(x=>x.id===it.pid);const v=p&&p.variants.find(x=>x.mat===it.mat);
+    return {product_id:v&&v.cloudId,quantity:it.qty};});
+  if(lines.some(x=>!x.product_id)){toast('Este producto no tiene vínculo de inventario');return;}
+  try{
+    const r=await cloudRequest({method:'POST',body:{action:'sale.create',sale:{...posSaleToAdmin(_venta),day:_venta.day,time:_venta.time,paid,change:paid-total,ts:_venta.ts,items:_venta.items},lines}});
+    if(!r.ok) throw new Error(r.error||'No se pudo guardar la venta');
+  }catch(e){toast(e.message);return;}
   sales.push(_venta);
   save();clearCart();toast('Venta #'+n+' guardada ✓');
-  try{ enqueueSale(posSaleToAdmin(_venta)); flushCloud(); }catch(e){}
+  await syncCloud();
 }
 
 /* ====== PRODUCTOS (editar) ====== */
